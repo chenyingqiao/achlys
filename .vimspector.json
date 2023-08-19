@@ -23,7 +23,13 @@
       "configuration": {
         "request": "launch",
         "program": "${workspaceFolder}",
-        "mode": "debug"
+        "mode": "debug",
+		"args": [
+					"run",
+					"-i",
+					"-t",
+					"/bin/sh"
+				]
       }
     },
     "run-unittest": {

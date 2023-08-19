@@ -7,7 +7,7 @@ import (
 	"syscall"
 )
 
-const DefaultCloneFlags uintptr = syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWNET | syscall.CLONE_NEWIPC
+const DefaultCloneFlags uintptr = syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWNET | syscall.CLONE_NEWIPC | syscall.CLONE_NEWUSER
 
 type PorcessOption struct{
 	KeepStedin bool
@@ -28,7 +28,9 @@ func NewProcess() *Process {
 
 //Run 在命名空间中执行一个新的进程
 func (*Process) Run(command string,opt PorcessOption) error {
+	log.Printf("start run command in container: %s %v\n", command,opt.Args)
 	if opt.Cloneflags == 0 {
+		log.Printf("start run command in container: %s %v\n", command,opt.Args)
 		opt.Cloneflags = DefaultCloneFlags
 	}
 	cmd := exec.Command(command, opt.Args...)
@@ -37,32 +39,39 @@ func (*Process) Run(command string,opt PorcessOption) error {
 		UidMappings: []syscall.SysProcIDMap{
 			{
 				ContainerID: 0,
-				HostID: 0,
+				HostID: os.Getuid(),
 				Size: 1,
 			},
 		},
 		GidMappings: []syscall.SysProcIDMap{
 			{
 				ContainerID: 0,
-				HostID: 0,
+				HostID: os.Getgid(),
 				Size: 1,
 			},
 		},
 	}
 	//这边要添加输出到文件的功能
 	if opt.TTY {
+		log.Println("启用tty")
 		if opt.KeepStedin {
 			cmd.Stdin = os.Stdin
 		}
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
-	if err := cmd.Start(); err != nil {
-		log.Printf("执行进程失败: %s",err.Error())
-		return err
-	}
-	cmd.Wait()
-	os.Exit(-1)
-	return nil
-}
+	log.Printf("进程开始执行")
+    if err := cmd.Start(); err != nil {
+        log.Printf("执行进程失败: %s", err.Error())
+        return err
+    }
+    
+    // 等待进程完成
+    if err := cmd.Wait(); err != nil {
+        log.Printf("进程等待失败: %s", err.Error())
+        return err
+    }
+    
+    log.Printf("进程已完成")
+    return nil}
 

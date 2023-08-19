@@ -25,9 +25,12 @@ var runCmd = &cobra.Command{
 	Short: "在容器中执行一个命令",
 	Long: ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		initArgs := []string{"init"}
+		initArgs = append(initArgs, args...)
 		err := pkg.NewProcess().Run(selfExe, pkg.PorcessOption{
 			KeepStedin: *RunArgsD.KeepStedin,
 			TTY: *RunArgsD.TTY,
+			Args: initArgs,
 		})
 		if err != nil {
 			log.Fatal(err)
@@ -39,6 +42,6 @@ var runCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-	RunArgsD.KeepStedin = runCmd.Flags().Bool("i",false,"Keep STDIN open even if not attached")
-	RunArgsD.TTY = runCmd.Flags().Bool("t",false,"Allocate a pseudo-TTY")
+	RunArgsD.KeepStedin = runCmd.Flags().BoolP("interactive","i",false,"Keep STDIN open even if not attached")
+	RunArgsD.TTY = runCmd.Flags().BoolP("tty","t",false,"Allocate a pseudo-TTY")
 }
