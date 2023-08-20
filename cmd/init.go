@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"log"
+	"mydocker/pkg"
 	"os"
 	"syscall"
 
@@ -22,11 +23,12 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Printf("init start %v", args)
-		if len(args) < 1 {
-			log.Fatalf("init failed!")
+		argsCommand,err := pkg.ReadExtraFd()
+		if err != nil {
+			log.Panic("读取管道错误:"+err.Error())
 		}
-		if err := InitContainerProcess(args[0],args[1:]); err != nil {
+		log.Printf("管道参数：%s",argsCommand)
+		if err := InitContainerProcess(args[0],argsCommand); err != nil {
 			log.Fatal(err.Error())
 			return
 		}

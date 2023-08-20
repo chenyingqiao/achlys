@@ -25,12 +25,12 @@ var runCmd = &cobra.Command{
 	Short: "在容器中执行一个命令",
 	Long: ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		initArgs := []string{"init"}
-		initArgs = append(initArgs, args...)
+		log.Printf("执行命令：%v",args)
 		err := pkg.NewProcess().Run(selfExe, pkg.PorcessOption{
 			KeepStedin: *RunArgsD.KeepStedin,
 			TTY: *RunArgsD.TTY,
-			Args: initArgs,
+			Args: []string{"init"},
+			PipeArgs: args,
 		})
 		if err != nil {
 			log.Fatal(err)
