@@ -58,7 +58,11 @@ func (*Process) Run(command string, opt PorcessOption) error {
 		log.Printf("创建管道失败%s", err.Error())
 		return err
 	}
-	processPipe.AttachExtraFilesToProcess(cmd)
+	err = processPipe.AttachExtraFilesToProcess(cmd)
+	if err != nil {
+		log.Printf("添加拓展管道文件失败%s\n", err.Error())
+		return err
+	}
 
 	//这边要添加输出到文件的功能
 	if opt.TTY {
@@ -77,8 +81,13 @@ func (*Process) Run(command string, opt PorcessOption) error {
 
 	// 发送命令参数
 	log.Printf("管道发送：%v",opt.PipeArgs)
-	processPipe.Send(opt.PipeArgs)
+	err = processPipe.Send(opt.PipeArgs)
+	if err != nil {
+		log.Printf("管道发送失败%s\n", err.Error())
+		return err
+	}
 	log.Printf("管道完成")
+
 	// 等待进程完成
 	if err := cmd.Wait(); err != nil {
 		log.Printf("进程等待失败: %s", err.Error())

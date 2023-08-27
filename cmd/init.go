@@ -7,6 +7,8 @@ import (
 	"log"
 	"mydocker/pkg"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -23,12 +25,16 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Printf("开始init初始化: %v",args)
 		argsCommand,err := pkg.ReadExtraFd()
 		if err != nil {
-			log.Panic("读取管道错误:"+err.Error())
+			log.Printf("读取管道错误:%s", err.Error())
 		}
 		log.Printf("管道参数：%s",argsCommand)
-		if err := InitContainerProcess(args[0],argsCommand); err != nil {
+		if len(argsCommand) == 0 {
+			log.Fatalf("init参数错误\n")
+		}
+		if err := InitContainerProcess(argsCommand[0],argsCommand[0:]); err != nil {
 			log.Fatal(err.Error())
 			return
 		}
@@ -37,25 +43,38 @@ to quickly create a Cobra application.`,
 
 func init() {
 	rootCmd.AddCommand(initCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// initCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// initCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
-
 
 func InitContainerProcess(command string, args []string) error {
 	log.Printf("start init container first process: %s\n", command)
-	syscall.Mount("proc","/proc","proc",uintptr(syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV), "")
-	if err := syscall.Exec(command,args,os.Environ()); err != nil {
-		log.Printf("exec command error:%s\n",err.Error())
-		return  err
+	//获取当前进程运行的目录作为根目录
+	pwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	log.Printf("当前目录：%s",pwd)
+	err  = pkg.PivotRoot(pwd)
+	if err != nil {
+		return err
+	}
+	pkg.MountSystemKeyDir()
+	pwd, err = os.Getwd()
+	if err != nil {
+		return err
+	}
+	log.Printf("当前目录：%s",pwd)
+	files,_ := filepath.Glob("*")
+	log.Printf("文件列表:%v",files)
+	log.Printf("执行commamd： %v %v",command, args)
+	path,err := exec.LookPath(command)
+	if err != nil {
+		log.Printf("找不到对应的可执行程序：%s",path)
+		return err
+	}
+	log.Printf("执行命令位置：%s",path)
+	if err := syscall.Exec(path, args, os.Environ()); err != nil {
+		log.Printf("exec command error:%s\n", err.Error())
+		return err
 	}
 	return nil
 }
