@@ -30,5 +30,6 @@ type Driver interface{
 }
 
 func CreateNetwork(driver, subnet, name string) error {
-	_, cidr, _ := net.ParseCIDR(subnet)
+	// _, cidr, _ := net.ParseCIDR(subnet)
+	return nil
 }
